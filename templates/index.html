@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prediksi Konsumsi Baterai Smartphone Berdasarkan Durasi Penggunaan Aplikasi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root { --brand: #2563eb; --brand-dark: #1e3a8a; }
+    html { scroll-behavior: smooth; }
+    section[id] { scroll-margin-top: 80px; }
+    body { background: #f1f5fb; color: #1f2937; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+    .navbar-main { background: var(--brand-dark); }
+    .navbar-main .nav-link { color: rgba(255,255,255,.8); }
+    .navbar-main .nav-link:hover { color: #fff; }
+
+    .hero { background: radial-gradient(circle at 15% 20%, #3b82f6, transparent 50%),
+                        linear-gradient(135deg, #1e3a8a, #2563eb 60%, #0ea5e9);
+            color: #fff; padding: 3.5rem 0 6.5rem; text-align: center; }
+    .hero h1 { max-width: 46rem; margin-inline: auto; line-height: 1.25; }
+    .hero .lead { max-width: 40rem; margin-inline: auto; }
+    .stat { background: rgba(255,255,255,.16); border-radius: 1rem; padding: .7rem 1.2rem; min-width: 12rem; }
+    .stat b { font-size: 1.2rem; display: block; line-height: 1.3; }
+
+    .lift { margin-top: -4rem; }
+    .cardx { border: 0; border-radius: 1.25rem; box-shadow: 0 6px 24px rgba(30,58,138,.10); }
+    .step-no { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--brand); color: #fff;
+               display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: .6rem; }
+    .section-title { font-weight: 700; }
+    .big { font-size: 3.2rem; font-weight: 800; line-height: 1; color: var(--brand); }
+    .meter { height: 14px; border-radius: 99px; background: linear-gradient(90deg, #22c55e, #facc15, #ef4444); position: relative; }
+    .meter .pin { position: absolute; top: -6px; width: 4px; height: 26px; background: #111827; border-radius: 2px; transform: translateX(-50%); }
+    .rules { background: #eff6ff; border-radius: 1rem; border: 1px dashed #93c5fd; }
+    .rules li { margin-bottom: .35rem; }
+    .chip { cursor: pointer; }
+    .accordion-button:not(.collapsed) { background: #eff6ff; color: var(--brand-dark); }
+    footer { color: #6b7280; }
+  </style>
+</head>
+<body>
+{% if load_error %}
+  <div class="container py-5"><div class="alert alert-danger">{{ load_error }}</div></div>
+{% else %}
+
+<nav class="navbar navbar-expand-md navbar-dark navbar-main sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-semibold" href="#atas">&#128267; Prediksi Baterai</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-label="Menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="menu">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#cara">Cara Pakai</a></li>
+        <li class="nav-item"><a class="nav-link" href="#prediksi">Prediksi</a></li>
+        <li class="nav-item"><a class="nav-link" href="#penjelasan">Penjelasan</a></li>
+        <li class="nav-item"><a class="nav-link" href="#data">Tentang Data</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="atas">
+  <div class="container">
+    <h1 class="fw-bold display-6 mb-3">Prediksi Konsumsi Baterai Smartphone Berdasarkan Durasi Penggunaan Aplikasi</h1>
+    <p class="lead mb-4 opacity-90">
+      Masukkan berapa lama kamu memakai aplikasi di HP dalam sehari, lalu lihat perkiraan baterai (mAh) yang terpakai.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      <div class="stat"><span class="small opacity-75">Belajar dari</span><b>{{ v.n_total|angka }} data pengguna</b></div>
+      <div class="stat"><span class="small opacity-75">Ketepatan model</span><b>{{ m.r2_persen }}% ({{ m.r2_label }})</b></div>
+      <div class="stat"><span class="small opacity-75">Rata-rata meleset sekitar</span><b>&plusmn; {{ info.rmse|angka }} mAh</b></div>
+    </div>
+  </div>
+</header>
+
+<main class="container lift pb-5">
+
+  <!-- CARA PAKAI -->
+  <section id="cara" class="mb-4">
+    <div class="row g-3 text-center">
+      <div class="col-md-4"><div class="card cardx h-100"><div class="card-body p-4">
+        <span class="step-no">1</span>
+        <div class="fw-semibold mb-1">Isi durasi</div>
+        <div class="small text-muted">Ketik berapa <b>menit</b> kamu memakai aplikasi dalam sehari, atau geser slider.</div>
+      </div></div></div>
+      <div class="col-md-4"><div class="card cardx h-100"><div class="card-body p-4">
+        <span class="step-no">2</span>
+        <div class="fw-semibold mb-1">Pilih kapasitas baterai</div>
+        <div class="small text-muted">Sesuaikan dengan HP-mu. Langkah ini boleh dilewati.</div>
+      </div></div></div>
+      <div class="col-md-4"><div class="card cardx h-100"><div class="card-body p-4">
+        <span class="step-no">3</span>
+        <div class="fw-semibold mb-1">Klik Prediksi</div>
+        <div class="small text-muted">Hasil muncul di sebelah kanan lengkap dengan penjelasannya.</div>
+      </div></div></div>
+    </div>
+  </section>
+
+  <!-- PREDIKSI -->
+  <section id="prediksi" class="mb-5">
+    <div class="row g-4">
+
+      <div class="col-lg-5">
+        <div class="card cardx mb-4">
+          <div class="card-body p-4">
+            <h2 class="h5 section-title mb-3">&#128241; Masukkan Data</h2>
+            <form method="post" action="#hasil-area" novalidate>
+              <label for="durasi" class="form-label fw-semibold">Lama pakai aplikasi per hari</label>
+              <div class="input-group input-group-lg">
+                <input type="number" step="any" min="1" max="{{ max_menit }}" name="durasi" id="durasi"
+                       class="form-control {% if error %}is-invalid{% endif %}"
+                       placeholder="contoh: {{ v.presets[1] if v.presets|length > 1 else v.presets[0] }}" value="{{ raw }}" required>
+                <span class="input-group-text">menit</span>
+                {% if error %}<div class="invalid-feedback">{{ error }}</div>{% endif %}
+              </div>
+              <div class="form-text mb-2" id="jamtext">&nbsp;</div>
+
+              <input type="range" class="form-range" id="slider" min="{{ v.x_min }}" max="{{ v.x_max }}" value="{{ raw or v.default_x }}">
+              <div class="d-flex justify-content-between small text-muted mb-3">
+                <span>{{ v.x_min|angka }} menit</span><span>{{ v.x_max|angka }} menit</span>
+              </div>
+
+              <div class="small text-muted mb-1">Pilihan cepat:</div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                {% for p in v.presets %}
+                <button type="button" class="btn btn-outline-primary btn-sm chip" data-val="{{ p }}">{{ p|jam_menit }}</button>
+                {% endfor %}
+              </div>
+
+              <label for="kapasitas" class="form-label fw-semibold">Kapasitas baterai HP <span class="text-muted fw-normal">(opsional)</span></label>
+              <select name="kapasitas" id="kapasitas" class="form-select mb-4">
+                {% for k in kapasitas %}<option value="{{ k }}" {% if k == kap %}selected{% endif %}>{{ k|angka }} mAh{% if k == 5000 %} (paling umum){% endif %}</option>{% endfor %}
+              </select>
+              <button class="btn btn-primary btn-lg w-100" type="submit">&#128269; Prediksi Sekarang</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="rules p-4">
+          <h2 class="h6 fw-bold mb-2">&#128204; Ketentuan Pengisian</h2>
+          <ul class="small mb-0 ps-3">
+            <li>Isi dengan <b>angka saja</b>. Desimal boleh (titik atau koma).</li>
+            <li>Satuannya <b>menit per hari</b> (total semua aplikasi). 1 jam = 60 menit.</li>
+            <li>Angka yang diterima: <b>1 sampai {{ max_menit|angka }} menit</b> (1 hari = 24 jam).</li>
+            <li>Rentang yang dipelajari model: <b>{{ v.x_min|angka }} sampai {{ v.x_max|angka }} menit</b>
+                (&asymp; {{ v.x_min|jam_menit }} sampai {{ v.x_max|jam_menit }}). Di luar rentang ini hasil kurang bisa dipercaya dan diberi peringatan.</li>
+            <li>Hasil berupa <b>mAh per hari</b> (ukuran baterai yang terpakai).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-7" id="hasil-area">
+        {% if result %}
+        <div class="card cardx mb-4" id="hasil" style="border-left: 6px solid var(--brand);">
+          <div class="card-body p-4">
+            <div class="text-muted">Kalau kamu memakai aplikasi selama <b>{{ result.durasi|angka }} menit</b> ({{ result.durasi|jam_menit }}) sehari, baterai yang terpakai kira-kira:</div>
+            <div class="big my-2">{{ result.pred|angka }} <span class="fs-4 fw-bold">mAh</span></div>
+            <div class="text-muted small mb-3">Kisaran wajarnya: {{ result.low|angka }} sampai {{ result.high|angka }} mAh (tebakan model bisa meleset sedikit).</div>
+
+            {% if warning %}<div class="alert alert-warning small">&#9888;&#65039; {{ warning }}</div>{% endif %}
+
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <div class="border rounded-3 p-3 h-100">
+                  <div class="small text-muted">Setara dengan</div>
+                  <div class="fs-4 fw-bold">&asymp; {{ result.persen_baterai|angka }}%</div>
+                  <div class="small text-muted">dari baterai {{ result.kap|angka }} mAh</div>
+                </div>
+              </div>
+              {% if result.tingkat %}
+              <div class="col-sm-6">
+                <div class="border rounded-3 p-3 h-100">
+                  <div class="small text-muted">Dibanding pengguna lain</div>
+                  <span class="badge bg-{{ result.tingkat[1] }} fs-6">{{ result.tingkat[0] }}</span>
+                  <div class="small text-muted mt-1">{{ result.tingkat[2] }}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="small fw-semibold mb-1">Posisi hasilmu dibanding seluruh data</div>
+            <div class="meter"><div class="pin" style="left: {{ result.pos }}%;"></div></div>
+            <div class="d-flex justify-content-between small text-muted mt-1">
+              <span>Hemat ({{ info.y_min|angka }} mAh)</span><span>Boros ({{ info.y_max|angka }} mAh)</span>
+            </div>
+            <p class="small text-muted mt-3 mb-0">&#8505;&#65039; Ini perkiraan umum dari data banyak orang, bukan ukuran pasti untuk HP-mu.</p>
+          </div>
+        </div>
+        {% else %}
+        <div class="card cardx mb-4">
+          <div class="card-body p-4 text-center text-muted">
+            <div style="font-size: 2.5rem;">&#128073;</div>
+            <div>Hasil prediksi akan muncul di sini setelah kamu mengisi form di sebelah kiri.</div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="card cardx">
+          <div class="card-body p-4">
+            <h2 class="h5 section-title">&#128200; Dari Mana Hasil Ini Berasal?</h2>
+            <p class="small text-muted">Setiap titik adalah satu pengguna. Semakin lama pakai aplikasi (ke kanan), semakin banyak baterai terpakai (ke atas). Garis merah adalah &quot;garis tebakan&quot; yang dipakai aplikasi ini.</p>
+            <img src="{{ url_for('static', filename='scatter.png') }}" class="img-fluid rounded" alt="Grafik titik data dan garis regresi">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENJELASAN -->
+  <section id="penjelasan" class="mb-5">
+    <h2 class="text-center section-title mb-4">&#128161; Penjelasan dengan Bahasa Sederhana</h2>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card cardx h-100">
+          <div class="card-body p-4">
+            <div class="accordion accordion-flush" id="faq">
+
+              <div class="accordion-item">
+                <h3 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">Bagaimana aplikasi ini bisa menebak?</button></h3>
+                <div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faq"><div class="accordion-body">
+                  Bayangkan kamu mencatat banyak orang: berapa lama mereka main aplikasi dan berapa baterai yang habis. Komputer lalu menarik <b>satu garis lurus</b> yang paling pas melewati catatan-catatan itu. Saat kamu memasukkan durasi baru, aplikasi tinggal melihat di garis itu: &quot;kalau segini menit, baterainya sekitar sekian&quot;. Cara ini disebut <b>Regresi Linear</b>.
+                </div></div>
+              </div>
+
+              <div class="accordion-item">
+                <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">Rumus tebakannya seperti apa?</button></h3>
+                <div id="f2" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">
+                  <code>baterai (mAh) = {{ info.intercept|angka(1) }} {{ "+" if info.coef >= 0 else "-" }} {{ info.coef|abs|angka(3) }} &times; menit pakai aplikasi</code>
+                  {% set contoh = result.durasi if result else v.default_x %}
+                  <p class="mt-2 mb-0">Contoh dengan {{ contoh|angka }} menit: {{ info.intercept|angka(1) }} {{ "+" if info.coef >= 0 else "-" }} {{ info.coef|abs|angka(3) }} &times; {{ contoh|angka }} &asymp; <b>{{ (info.intercept + info.coef * contoh)|angka }} mAh</b>.</p>
+                </div></div>
+              </div>
+
+              <div class="accordion-item">
+                <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f3">Apa arti angka {{ info.coef|angka(3) }} dan {{ info.intercept|angka(1) }}?</button></h3>
+                <div id="f3" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">
+                  <p><b>{{ info.coef|angka(3) }} (kemiringan/slope):</b> setiap kamu menambah <b>1 menit</b> memakai aplikasi, baterai yang terpakai bertambah sekitar <b>{{ info.coef|angka(2) }} mAh</b>. Kalau tambah 1 jam, bertambah sekitar <b>{{ m.slope_jam|angka }} mAh</b>.</p>
+                  <p class="mb-0"><b>{{ info.intercept|angka(1) }} (titik awal/intercept):</b>
+                  {% if m.intercept_wajar %}
+                    anggap saja ini &quot;pemakaian dasar&quot; HP, misalnya layar menyala, sinyal, dan proses di latar belakang, bahkan saat aplikasi hampir tidak dipakai.
+                  {% else %}
+                    ini hanya titik awal garis supaya hitungannya pas, jadi tidak perlu diartikan secara harfiah.
+                  {% endif %}
+                  </p>
+                </div></div>
+              </div>
+
+              <div class="accordion-item">
+                <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f4">Seberapa bisa dipercaya? (R&sup2;, RMSE, MAE)</button></h3>
+                <div id="f4" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">
+                  <p><b>R&sup2; = {{ info.r2|angka(2) }} ({{ m.r2_persen }}%):</b> sekitar {{ m.r2_persen }}% perbedaan baterai antar-orang bisa dijelaskan oleh lamanya pakai aplikasi. Nilainya 0&ndash;100%, makin tinggi makin baik. Kategori: <span class="badge bg-{{ m.r2_warna }}">{{ m.r2_label }}</span>.</p>
+                  <p><b>RMSE = {{ info.rmse|angka(1) }} mAh:</b> rata-rata, tebakan model meleset sekitar segitu dari kenyataan. Makin kecil makin baik.</p>
+                  <p class="mb-0"><b>MAE = {{ info.mae|angka(1) }} mAh:</b> mirip RMSE, tapi lebih ramah terhadap kesalahan besar yang jarang terjadi. Diukur pada {{ info.n_test|angka }} data yang <i>tidak</i> dipakai saat model belajar, jadi lebih jujur.</p>
+                </div></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="card cardx h-100">
+          <div class="card-body p-4">
+            <h3 class="h5 section-title">&#9888;&#65039; Hal yang Perlu Diingat</h3>
+            <ul class="small mb-0 ps-3">
+              <li class="mb-2">Model hanya melihat <b>satu hal</b>: lama pakai aplikasi. Kecerahan layar, jenis aplikasi (game vs chat), sinyal, dan usia baterai juga berpengaruh tapi tidak dihitung.</li>
+              <li class="mb-2">Hasilnya <b>perkiraan umum</b> dari data banyak orang, bukan ukuran tepat untuk HP kamu.</li>
+              <li class="mb-2">Model hanya tepercaya untuk durasi <b>{{ v.x_min|angka }}&ndash;{{ v.x_max|angka }} menit</b> per hari.</li>
+              <li class="mb-2">&quot;Setara %&quot; dihitung dari kapasitas yang kamu pilih, hanya untuk gambaran.</li>
+              <li>Hubungan dua angka tidak selalu berarti yang satu pasti menyebabkan yang lain, tapi di sini masuk akal karena aplikasi yang dipakai memang menguras daya.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TENTANG DATA -->
+  <section id="data">
+    <div class="card cardx mx-auto" style="max-width: 52rem;">
+      <div class="card-body p-4">
+        <h2 class="h5 section-title text-center mb-3">&#128218; Tentang Data</h2>
+        <table class="table table-sm small mb-3">
+          <tr><td class="text-muted" style="width: 11rem;">Sumber</td><td>Kaggle: Mobile Device Usage and User Behavior Dataset</td></tr>
+          <tr><td class="text-muted">Jumlah data</td><td>{{ v.n_total|angka }} pengguna ({{ info.n_train|angka }} untuk belajar, {{ info.n_test|angka }} untuk menguji)</td></tr>
+          <tr><td class="text-muted">Yang dimasukkan (X)</td><td>Lama pakai aplikasi, {{ v.x_min|angka }}&ndash;{{ v.x_max|angka }} menit/hari</td></tr>
+          <tr><td class="text-muted">Yang ditebak (y)</td><td>Baterai terpakai{% if info.y_min is defined %}, {{ info.y_min|angka }}&ndash;{{ info.y_max|angka }} mAh/hari{% endif %}</td></tr>
+        </table>
+        <div class="text-center"><a class="small" href="https://www.kaggle.com/datasets/valakhorasani/mobile-device-usage-and-user-behavior-dataset" target="_blank" rel="noopener">Lihat dataset di Kaggle &rarr;</a></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="text-center small mt-5">Proyek Praktikum Pembelajaran Mesin &middot; Regresi Linear Sederhana &middot; Flask + Scikit-learn</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const input = document.getElementById('durasi');
+  const slider = document.getElementById('slider');
+  const jamtext = document.getElementById('jamtext');
+
+  function fmt(m) {
+    m = Math.round(m);
+    const j = Math.floor(m / 60), s = m % 60;
+    if (j && s) return j + ' jam ' + s + ' menit';
+    return j ? j + ' jam' : s + ' menit';
+  }
+  function updateText() {
+    const v = parseFloat(String(input.value).replace(',', '.'));
+    jamtext.innerHTML = (v > 0) ? '= ' + fmt(v) : '&nbsp;';
+  }
+  slider.addEventListener('input', () => { input.value = slider.value; updateText(); });
+  input.addEventListener('input', () => {
+    const v = parseFloat(input.value);
+    if (!isNaN(v)) slider.value = v;
+    updateText();
+  });
+  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+    input.value = b.dataset.val; slider.value = b.dataset.val; updateText();
+  }));
+  updateText();
+  const hasil = document.getElementById('hasil');
+  if (hasil) hasil.scrollIntoView({ behavior: 'smooth', block: 'center' });
+</script>
+{% endif %}
+</body>
+</html>
