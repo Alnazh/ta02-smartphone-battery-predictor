@@ -17,12 +17,6 @@ python train_model.py
 python app.py                    # buka http://127.0.0.1:5000
 ```
 
-## Deploy (Render)
-1. Push seluruh folder ke GitHub, **termasuk** `model.joblib`, `metrics.json`, dan `static/scatter.png` (jalankan `train_model.py` dulu).
-2. Render: New > Web Service > pilih repo.
-3. Build Command: `pip install -r requirements.txt`
-4. Start Command: `gunicorn app:app`
-
 ## Struktur
 - `train_model.py` : EDA ringkas, pembersihan, latih model, evaluasi (R2, RMSE, MAE), simpan dengan Joblib
 - `app.py` : backend Flask (muat model, validasi input, prediksi)
